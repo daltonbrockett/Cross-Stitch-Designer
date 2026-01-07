@@ -12,6 +12,11 @@ interface EditorState {
     scale: number
     position: Position
 
+    // History
+    undoStack: Array<Array<{ key: string, oldColor?: string, newColor: string }>>
+    redoStack: Array<Array<{ key: string, oldColor?: string, newColor: string }>>
+    currentStroke: Array<{ key: string, oldColor?: string, newColor: string }>
+
     // Actions
     setPixel: (x: number, y: number, color: string) => void
     removePixel: (x: number, y: number) => void
@@ -19,9 +24,15 @@ interface EditorState {
     setPan: (x: number, y: number) => void
     setColor: (color: string) => void
     addColor: (color: string) => void
+
+    // History Actions
+    startStroke: () => void
+    endStroke: () => void
+    undo: () => void
+    redo: () => void
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
+export const useEditorStore = create<EditorState>((set, get) => ({
     pattern: {}, // Sparse map
     palette: [
         '#FF0000', // Red
@@ -37,14 +48,34 @@ export const useEditorStore = create<EditorState>((set) => ({
     scale: 1,
     position: { x: 0, y: 0 },
 
-    setPixel: (x, y, color) => set((state) => ({
-        pattern: { ...state.pattern, [`${x},${y}`]: color }
-    })),
+    undoStack: [],
+    redoStack: [],
+    currentStroke: [],
+
+    setPixel: (x, y, color) => set((state) => {
+        const key = `${x},${y}`;
+        const oldColor = state.pattern[key];
+
+        // Don't record if no change
+        if (oldColor === color) return {};
+        return {
+            pattern: { ...state.pattern, [key]: color },
+            currentStroke: [...state.currentStroke, { key, oldColor, newColor: color }]
+        };
+    }),
 
     removePixel: (x, y) => set((state) => {
-        const newPattern = { ...state.pattern }
-        delete newPattern[`${x},${y}`]
-        return { pattern: newPattern }
+        const key = `${x},${y}`;
+        const oldColor = state.pattern[key];
+        if (oldColor === undefined) return {}; // Nothing to remove
+
+        const newPattern = { ...state.pattern };
+        delete newPattern[key];
+
+        return {
+            pattern: newPattern,
+            currentStroke: [...state.currentStroke, { key, oldColor, newColor: undefined as any }] // undefined means delete
+        };
     }),
 
     setZoom: (scale) => set({ scale }),
@@ -62,4 +93,69 @@ export const useEditorStore = create<EditorState>((set) => ({
             selectedColor: color
         }
     }),
+
+    startStroke: () => set({ currentStroke: [] }),
+
+    endStroke: () => set((state) => {
+        if (state.currentStroke.length === 0) return {};
+
+        // Deduplicate changes? If I paint over the same pixel twice in one stroke?
+        // Better to just push the raw sequence or optimize?
+        // Optimization: Keep only the *first* oldColor for a key in this stroke, and the *last* newColor.
+        // But for now, simple raw sequence is fine unless it gets huge.
+
+        return {
+            undoStack: [...state.undoStack, state.currentStroke],
+            redoStack: [], // Clear redo on new action
+            currentStroke: []
+        };
+    }),
+
+    undo: () => set((state) => {
+        if (state.undoStack.length === 0) return {};
+
+        const stroke = state.undoStack[state.undoStack.length - 1];
+        const newUndoStack = state.undoStack.slice(0, -1);
+
+        // Apply changes in reverse
+        const newPattern = { ...state.pattern };
+        const reversedStroke = [...stroke].reverse();
+
+        reversedStroke.forEach(({ key, oldColor }) => {
+            if (oldColor === undefined) {
+                delete newPattern[key];
+            } else {
+                newPattern[key] = oldColor;
+            }
+        });
+
+        return {
+            pattern: newPattern,
+            undoStack: newUndoStack,
+            redoStack: [...state.redoStack, stroke]
+        };
+    }),
+
+    redo: () => set((state) => {
+        if (state.redoStack.length === 0) return {};
+
+        const stroke = state.redoStack[state.redoStack.length - 1];
+        const newRedoStack = state.redoStack.slice(0, -1);
+
+        const newPattern = { ...state.pattern };
+
+        stroke.forEach(({ key, newColor }) => {
+            if (newColor === undefined) {
+                delete newPattern[key];
+            } else {
+                newPattern[key] = newColor;
+            }
+        });
+
+        return {
+            pattern: newPattern,
+            undoStack: [...state.undoStack, stroke],
+            redoStack: newRedoStack
+        };
+    })
 }))

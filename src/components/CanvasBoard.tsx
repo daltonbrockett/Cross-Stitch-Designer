@@ -15,7 +15,10 @@ export const CanvasBoard: React.FC = () => {
         selectedColor,
         setPixel,
         setZoom,
-        setPan
+        setPan,
+        startStroke,
+        endStroke,
+        undo
     } = useEditorStore();
 
     const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -26,9 +29,22 @@ export const CanvasBoard: React.FC = () => {
         const handleResize = () => {
             setSize({ width: window.innerWidth, height: window.innerHeight });
         };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+        };
+
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [undo]);
 
     const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
         e.evt.preventDefault();
@@ -69,6 +85,8 @@ export const CanvasBoard: React.FC = () => {
         // If button 0 (left), we paint
         if (e.evt.button === 0) {
             isPainting.current = true;
+            startStroke(); // Start recording history
+
             const stage = e.target.getStage();
             if (!stage) return;
 
@@ -94,7 +112,10 @@ export const CanvasBoard: React.FC = () => {
     };
 
     const handleMouseUp = () => {
-        isPainting.current = false;
+        if (isPainting.current) {
+            isPainting.current = false;
+            endStroke(); // Commit history
+        }
     };
 
     // Draggable logic for panning (middle click)

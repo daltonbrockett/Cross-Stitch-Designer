@@ -24,7 +24,7 @@ function App() {
             <div className="w-16 flex flex-col items-center py-4 bg-white shadow-md z-10 border-r border-gray-200 relative">
                 <div className="mb-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Palette</div>
 
-                <div className="flex flex-col gap-2 overflow-y-auto w-full items-center pb-2 max-h-[calc(100vh-150px)] scrollbar-hide">
+                <div className="flex flex-col gap-2 overflow-y-auto w-full items-center py-2 max-h-[calc(100vh-150px)] scrollbar-hide">
                     {palette.map((color) => (
                         <button
                             key={color}
