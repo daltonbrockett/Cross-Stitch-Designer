@@ -1,6 +1,7 @@
 import React from 'react';
 import { CanvasBoard } from './components/CanvasBoard';
 import { ColorPicker } from './components/ColorPicker';
+import { findClosestDMC } from './utils/colorUtils';
 import { useEditorStore } from './store';
 
 
@@ -13,6 +14,9 @@ function App() {
     const scale = useEditorStore((state) => state.scale);
 
     const [isPickerOpen, setIsPickerOpen] = React.useState(false);
+
+    const dmcMatch = React.useMemo(() => findClosestDMC(selectedColor), [selectedColor]);
+
 
     return (
         <div className="flex h-screen w-screen bg-gray-100 overflow-hidden">
@@ -62,8 +66,30 @@ function App() {
             </div>
 
             {/* Main Canvas Area */}
-            <div className="flex-1 relaitve">
+            <div className="flex-1 relative">
                 <CanvasBoard />
+
+                {/* Selected Color Info Panel */}
+                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-gray-200 z-10 flex items-center gap-3 pointer-events-none select-none transition-all">
+                    <div
+                        className="w-12 h-12 rounded-lg border-2 border-white shadow-md"
+                        style={{ backgroundColor: selectedColor }}
+                    />
+                    <div className="flex flex-col min-w-[140px]">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Selected Color</div>
+                        <div className="font-mono font-bold text-gray-800 text-lg leading-none mb-1">{selectedColor}</div>
+                        {dmcMatch && (
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-1.5 text-xs text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                                    <span>DMC {dmcMatch.floss}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 font-medium truncate max-w-[150px] mt-0.5">
+                                    {dmcMatch.description}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

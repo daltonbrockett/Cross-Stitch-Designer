@@ -19,7 +19,7 @@ export const CanvasBoard: React.FC = () => {
     } = useEditorStore();
 
     const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-    const isDragging = useRef(false);
+    //const isDragging = useRef(false);
     const isPainting = useRef(false);
 
     useEffect(() => {
