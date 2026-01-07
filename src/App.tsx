@@ -1,12 +1,14 @@
 import React from 'react';
 import { CanvasBoard } from './components/CanvasBoard';
 import { ColorPicker } from './components/ColorPicker';
+import { ProjectSetupModal } from './components/ProjectSetupModal';
 import { findClosestDMC } from './utils/colorUtils';
 import { useEditorStore } from './store';
 
 
 
 function App() {
+    const projectConfig = useEditorStore((state) => state.projectConfig);
     const selectedColor = useEditorStore((state) => state.selectedColor);
     const setColor = useEditorStore((state) => state.setColor);
     const palette = useEditorStore((state) => state.palette);
@@ -17,6 +19,9 @@ function App() {
 
     const dmcMatch = React.useMemo(() => findClosestDMC(selectedColor), [selectedColor]);
 
+    if (!projectConfig) {
+        return <ProjectSetupModal />;
+    }
 
     return (
         <div className="flex h-screen w-screen bg-gray-100 overflow-hidden">

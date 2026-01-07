@@ -5,12 +5,23 @@ export interface Position {
     y: number
 }
 
+export interface ProjectConfig {
+    aidaCount: 11 | 14 | 16 | 18;
+    isCircular: boolean;
+    width: number; // inches
+    height: number; // inches
+    radius: number; // inches
+    strands: 1 | 2 | 3 | 6;
+}
+
 interface EditorState {
     pattern: Record<string, string> // "x,y" -> hex color
     selectedColor: string
     palette: string[]
     scale: number
     position: Position
+
+    projectConfig: ProjectConfig | null
 
     // History
     undoStack: Array<Array<{ key: string, oldColor?: string, newColor: string }>>
@@ -24,6 +35,7 @@ interface EditorState {
     setPan: (x: number, y: number) => void
     setColor: (color: string) => void
     addColor: (color: string) => void
+    setProjectConfig: (config: ProjectConfig) => void
 
     // History Actions
     startStroke: () => void
@@ -32,7 +44,7 @@ interface EditorState {
     redo: () => void
 }
 
-export const useEditorStore = create<EditorState>((set, get) => ({
+export const useEditorStore = create<EditorState>((set) => ({
     pattern: {}, // Sparse map
     palette: [
         '#FF0000', // Red
@@ -47,6 +59,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     selectedColor: '#FF0000',
     scale: 1,
     position: { x: 0, y: 0 },
+
+    projectConfig: null,
 
     undoStack: [],
     redoStack: [],
@@ -93,6 +107,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
             selectedColor: color
         }
     }),
+
+    setProjectConfig: (config) => set({ projectConfig: config }),
 
     startStroke: () => set({ currentStroke: [] }),
 
