@@ -5,9 +5,10 @@ import { findClosestDMC } from '../utils/colorUtils';
 interface ColorPickerProps {
     onClose: () => void;
     onAdd: (color: string) => void;
+    style?: React.CSSProperties;
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ onClose, onAdd }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = ({ onClose, onAdd, style }) => {
     const [color, setColor] = useState('#aabbcc');
 
     const closestDMC = useMemo(() => findClosestDMC(color), [color]);
@@ -18,7 +19,10 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ onClose, onAdd }) => {
     };
 
     return (
-        <div className="absolute top-0 left-16 z-20 bg-white p-4 rounded-lg shadow-xl border border-gray-200 w-64">
+        <div
+            className="absolute left-16 z-20 bg-white p-4 rounded-lg shadow-xl border border-gray-200 w-64"
+            style={{ top: 0, ...style }}
+        >
             <h3 className="text-sm font-bold text-gray-700 mb-3">Add Custom Color</h3>
 
             <div className="flex justify-center mb-3">

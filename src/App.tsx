@@ -54,6 +54,7 @@ function App() {
                             addColor(color);
                             setIsPickerOpen(false);
                         }}
+                        style={{ top: 150 }}
                     />
                 )}
 
