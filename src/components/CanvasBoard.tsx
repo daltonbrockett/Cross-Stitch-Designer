@@ -5,6 +5,7 @@ import { Vector2d } from 'konva/lib/types';
 import { useEditorStore } from '../store';
 import { GridLayer } from './GridLayer';
 import { StitchLayer } from './StitchLayer';
+import { FrameLayer } from './FrameLayer';
 
 const CELL_SIZE = 20;
 
@@ -13,6 +14,7 @@ export const CanvasBoard: React.FC = () => {
         scale,
         position,
         selectedColor,
+        projectConfig,
         setPixel,
         setZoom,
         setPan,
@@ -22,7 +24,6 @@ export const CanvasBoard: React.FC = () => {
     } = useEditorStore();
 
     const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-    //const isDragging = useRef(false);
     const isPainting = useRef(false);
 
     useEffect(() => {
@@ -80,6 +81,37 @@ export const CanvasBoard: React.FC = () => {
         };
     };
 
+    const isWithinBounds = (x: number, y: number) => {
+        if (!projectConfig) return true;
+
+        const { isCircular, aidaCount, width, height, radius } = projectConfig;
+
+        if (isCircular) {
+            // Circle center in grid coords
+            const r = radius * aidaCount;
+            const cx = r;
+            const cy = r;
+            const distSq = (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2;
+            return distSq <= r ** 2;
+        } else {
+            // Rectangle
+            const w = width * aidaCount;
+            const h = height * aidaCount;
+            return x >= 0 && x < w && y >= 0 && y < h;
+        }
+    };
+
+    const paintAt = (stage: any) => {
+        const pointer = stage.getPointerPosition();
+        if (pointer) {
+            const { x, y } = getGridPos(pointer, position.x, position.y, scale);
+
+            if (isWithinBounds(x, y)) {
+                setPixel(x, y, selectedColor);
+            }
+        }
+    };
+
     const handleMouseDown = (e: KonvaEventObject<MouseEvent>) => {
         // Middle click (button 1) or spacebar+drag (handled via draggable)
         // If button 0 (left), we paint
@@ -89,12 +121,7 @@ export const CanvasBoard: React.FC = () => {
 
             const stage = e.target.getStage();
             if (!stage) return;
-
-            const pointer = stage.getPointerPosition();
-            if (pointer) {
-                const { x, y } = getGridPos(pointer, position.x, position.y, scale);
-                setPixel(x, y, selectedColor);
-            }
+            paintAt(stage);
         }
     };
 
@@ -102,12 +129,7 @@ export const CanvasBoard: React.FC = () => {
         if (isPainting.current) {
             const stage = e.target.getStage();
             if (!stage) return;
-
-            const pointer = stage.getPointerPosition();
-            if (pointer) {
-                const { x, y } = getGridPos(pointer, position.x, position.y, scale);
-                setPixel(x, y, selectedColor);
-            }
+            paintAt(stage);
         }
     };
 
@@ -119,11 +141,6 @@ export const CanvasBoard: React.FC = () => {
     };
 
     // Draggable logic for panning (middle click)
-    // Konva has native 'draggable' prop, but we want to control it via store 'position'
-    // However, updating store on every drag move is expensive for React re-renders if we re-render the WHOLE stage.
-    // But since position is binding to Stage props, it's okay.
-    // We can use onDragEnd to sync, or onDragMove.
-    // Requirement: "Implement Draggable logic".
 
     return (
         <Stage
@@ -143,6 +160,7 @@ export const CanvasBoard: React.FC = () => {
         >
             <GridLayer width={size.width} height={size.height} />
             <StitchLayer />
+            <FrameLayer />
         </Stage>
     );
 };

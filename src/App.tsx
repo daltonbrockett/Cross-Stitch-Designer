@@ -2,6 +2,7 @@ import React from 'react';
 import { CanvasBoard } from './components/CanvasBoard';
 import { ColorPicker } from './components/ColorPicker';
 import { ProjectSetupModal } from './components/ProjectSetupModal';
+import { ProjectMaterialsModal } from './components/ProjectMaterialsModal';
 import { findClosestDMC } from './utils/colorUtils';
 import { useEditorStore } from './store';
 
@@ -16,6 +17,7 @@ function App() {
     const scale = useEditorStore((state) => state.scale);
 
     const [isPickerOpen, setIsPickerOpen] = React.useState(false);
+    const [isMaterialsOpen, setIsMaterialsOpen] = React.useState(false);
 
     const dmcMatch = React.useMemo(() => findClosestDMC(selectedColor), [selectedColor]);
 
@@ -27,9 +29,25 @@ function App() {
         <div className="flex h-screen w-screen bg-gray-100 overflow-hidden">
             {/* Sidebar */}
             <div className="w-16 flex flex-col items-center py-4 bg-white shadow-md z-10 border-r border-gray-200 relative">
+
+                {/* Tools Section Top */}
+                <div className="flex flex-col gap-4 mb-4">
+                    <button
+                        onClick={() => setIsMaterialsOpen(true)}
+                        className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 flex items-center justify-center transition-all"
+                        title="Project Materials"
+                    >
+                        {/* List/Clipboard Icon */}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </button>
+                    <div className="w-8 h-px bg-gray-200 mx-auto"></div>
+                </div>
+
                 <div className="mb-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-center">Palette</div>
 
-                <div className="flex flex-col gap-2 overflow-y-auto w-full items-center py-2 max-h-[calc(100vh-150px)] scrollbar-hide">
+                <div className="flex flex-col gap-2 overflow-y-auto w-full items-center py-2 max-h-[calc(100vh-250px)] scrollbar-hide">
                     {palette.map((color) => (
                         <button
                             key={color}
@@ -96,6 +114,11 @@ function App() {
                         )}
                     </div>
                 </div>
+
+                {/* Materials Modal */}
+                {isMaterialsOpen && (
+                    <ProjectMaterialsModal onClose={() => setIsMaterialsOpen(false)} />
+                )}
             </div>
         </div>
     );

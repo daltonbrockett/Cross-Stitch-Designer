@@ -115,10 +115,7 @@ export const useEditorStore = create<EditorState>((set) => ({
     endStroke: () => set((state) => {
         if (state.currentStroke.length === 0) return {};
 
-        // Deduplicate changes? If I paint over the same pixel twice in one stroke?
-        // Better to just push the raw sequence or optimize?
-        // Optimization: Keep only the *first* oldColor for a key in this stroke, and the *last* newColor.
-        // But for now, simple raw sequence is fine unless it gets huge.
+
 
         return {
             undoStack: [...state.undoStack, state.currentStroke],
