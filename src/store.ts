@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface Position {
     x: number
@@ -44,135 +45,180 @@ interface EditorState {
     endStroke: () => void
     undo: () => void
     redo: () => void
+    loadProject: (data: { pattern: Record<string, string>, palette: string[], projectConfig: ProjectConfig }) => void
+    resetProject: () => void
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
-    pattern: {}, // Sparse map
-    palette: [
-        '#FF0000', // Red
-        '#00FF00', // Green
-        '#0000FF', // Blue
-        '#FFFF00', // Yellow
-        '#000000', // Black
-        '#FFFFFF', // White
-        '#FFA500', // Orange
-        '#800080', // Purple
-    ],
-    selectedColor: '#FF0000',
-    tool: 'brush',
-    scale: 1,
-    position: { x: 0, y: 0 },
+export const useEditorStore = create<EditorState>()(
+    persist(
+        (set) => ({
+            pattern: {}, // Sparse map
+            palette: [
+                '#FF0000', // Red
+                '#00FF00', // Green
+                '#0000FF', // Blue
+                '#FFFF00', // Yellow
+                '#000000', // Black
+                '#FFFFFF', // White
+                '#FFA500', // Orange
+                '#800080', // Purple
+            ],
+            selectedColor: '#FF0000',
+            tool: 'brush',
+            scale: 1,
+            position: { x: 0, y: 0 },
 
-    projectConfig: null,
+            projectConfig: null,
 
-    undoStack: [],
-    redoStack: [],
-    currentStroke: [],
+            undoStack: [],
+            redoStack: [],
+            currentStroke: [],
 
-    setPixel: (x, y, color) => set((state) => {
-        const key = `${x},${y}`;
-        const oldColor = state.pattern[key];
+            setPixel: (x, y, color) => set((state) => {
+                const key = `${x},${y}`;
+                const oldColor = state.pattern[key];
 
-        // Don't record if no change
-        if (oldColor === color) return {};
-        return {
-            pattern: { ...state.pattern, [key]: color },
-            currentStroke: [...state.currentStroke, { key, oldColor, newColor: color }]
-        };
-    }),
+                // Don't record if no change
+                if (oldColor === color) return {};
+                return {
+                    pattern: { ...state.pattern, [key]: color },
+                    currentStroke: [...state.currentStroke, { key, oldColor, newColor: color }]
+                };
+            }),
 
-    removePixel: (x, y) => set((state) => {
-        const key = `${x},${y}`;
-        const oldColor = state.pattern[key];
-        if (oldColor === undefined) return {}; // Nothing to remove
+            removePixel: (x, y) => set((state) => {
+                const key = `${x},${y}`;
+                const oldColor = state.pattern[key];
+                if (oldColor === undefined) return {}; // Nothing to remove
 
-        const newPattern = { ...state.pattern };
-        delete newPattern[key];
-
-        return {
-            pattern: newPattern,
-            currentStroke: [...state.currentStroke, { key, oldColor, newColor: undefined as any }] // undefined means delete
-        };
-    }),
-
-    setZoom: (scale) => set({ scale }),
-
-    setPan: (x, y) => set({ position: { x, y } }),
-
-    setColor: (color) => set({ selectedColor: color }),
-    setTool: (tool) => set({ tool }),
-
-    addColor: (color) => set((state) => {
-        if (state.palette.includes(color)) {
-            return { selectedColor: color };
-        }
-        return {
-            palette: [...state.palette, color],
-            selectedColor: color
-        }
-    }),
-
-    setProjectConfig: (config) => set({ projectConfig: config }),
-
-    startStroke: () => set({ currentStroke: [] }),
-
-    endStroke: () => set((state) => {
-        if (state.currentStroke.length === 0) return {};
-
-
-
-        return {
-            undoStack: [...state.undoStack, state.currentStroke],
-            redoStack: [], // Clear redo on new action
-            currentStroke: []
-        };
-    }),
-
-    undo: () => set((state) => {
-        if (state.undoStack.length === 0) return {};
-
-        const stroke = state.undoStack[state.undoStack.length - 1];
-        const newUndoStack = state.undoStack.slice(0, -1);
-
-        // Apply changes in reverse
-        const newPattern = { ...state.pattern };
-        const reversedStroke = [...stroke].reverse();
-
-        reversedStroke.forEach(({ key, oldColor }) => {
-            if (oldColor === undefined) {
+                const newPattern = { ...state.pattern };
                 delete newPattern[key];
-            } else {
-                newPattern[key] = oldColor;
-            }
-        });
 
-        return {
-            pattern: newPattern,
-            undoStack: newUndoStack,
-            redoStack: [...state.redoStack, stroke]
-        };
-    }),
+                return {
+                    pattern: newPattern,
+                    currentStroke: [...state.currentStroke, { key, oldColor, newColor: undefined as any }] // undefined means delete
+                };
+            }),
 
-    redo: () => set((state) => {
-        if (state.redoStack.length === 0) return {};
+            setZoom: (scale) => set({ scale }),
 
-        const stroke = state.redoStack[state.redoStack.length - 1];
-        const newRedoStack = state.redoStack.slice(0, -1);
+            setPan: (x, y) => set({ position: { x, y } }),
 
-        const newPattern = { ...state.pattern };
+            setColor: (color) => set({ selectedColor: color }),
+            setTool: (tool) => set({ tool }),
 
-        stroke.forEach(({ key, newColor }) => {
-            if (newColor === undefined) {
-                delete newPattern[key];
-            } else {
-                newPattern[key] = newColor;
-            }
-        });
+            addColor: (color) => set((state) => {
+                if (state.palette.includes(color)) {
+                    return { selectedColor: color };
+                }
+                return {
+                    palette: [...state.palette, color],
+                    selectedColor: color
+                }
+            }),
 
-        return {
-            pattern: newPattern,
-            undoStack: [...state.undoStack, stroke],
-            redoStack: newRedoStack
-        };
-    })
-}))
+            setProjectConfig: (config) => set({ projectConfig: config }),
+
+            loadProject: (data) => set({
+                pattern: data.pattern,
+                palette: data.palette,
+                projectConfig: data.projectConfig,
+                undoStack: [],
+                redoStack: [],
+                currentStroke: []
+            }),
+
+            resetProject: () => set({
+                pattern: {},
+                palette: [
+                    '#FF0000', // Red
+                    '#00FF00', // Green
+                    '#0000FF', // Blue
+                    '#FFFF00', // Yellow
+                    '#000000', // Black
+                    '#FFFFFF', // White
+                    '#FFA500', // Orange
+                    '#800080', // Purple
+                ],
+                selectedColor: '#FF0000',
+                tool: 'brush',
+                scale: 1,
+                position: { x: 0, y: 0 },
+                projectConfig: null,
+                undoStack: [],
+                redoStack: [],
+                currentStroke: []
+            }),
+
+            startStroke: () => set({ currentStroke: [] }),
+
+            endStroke: () => set((state) => {
+                if (state.currentStroke.length === 0) return {};
+
+
+
+                return {
+                    undoStack: [...state.undoStack, state.currentStroke],
+                    redoStack: [], // Clear redo on new action
+                    currentStroke: []
+                };
+            }),
+
+            undo: () => set((state) => {
+                if (state.undoStack.length === 0) return {};
+
+                const stroke = state.undoStack[state.undoStack.length - 1];
+                const newUndoStack = state.undoStack.slice(0, -1);
+
+                // Apply changes in reverse
+                const newPattern = { ...state.pattern };
+                const reversedStroke = [...stroke].reverse();
+
+                reversedStroke.forEach(({ key, oldColor }) => {
+                    if (oldColor === undefined) {
+                        delete newPattern[key];
+                    } else {
+                        newPattern[key] = oldColor;
+                    }
+                });
+
+                return {
+                    pattern: newPattern,
+                    undoStack: newUndoStack,
+                    redoStack: [...state.redoStack, stroke]
+                };
+            }),
+
+            redo: () => set((state) => {
+                if (state.redoStack.length === 0) return {};
+
+                const stroke = state.redoStack[state.redoStack.length - 1];
+                const newRedoStack = state.redoStack.slice(0, -1);
+
+                const newPattern = { ...state.pattern };
+
+                stroke.forEach(({ key, newColor }) => {
+                    if (newColor === undefined) {
+                        delete newPattern[key];
+                    } else {
+                        newPattern[key] = newColor;
+                    }
+                });
+
+                return {
+                    pattern: newPattern,
+                    undoStack: [...state.undoStack, stroke],
+                    redoStack: newRedoStack
+                };
+            })
+        }),
+        {
+            name: 'cross-stitch-storage',
+            partialize: (state) => ({
+                pattern: state.pattern,
+                palette: state.palette,
+                projectConfig: state.projectConfig,
+            }),
+        }
+    )
+)

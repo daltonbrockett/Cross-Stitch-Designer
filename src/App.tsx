@@ -17,11 +17,63 @@ function App() {
     const palette = useEditorStore((state) => state.palette);
     const addColor = useEditorStore((state) => state.addColor);
     const scale = useEditorStore((state) => state.scale);
+    const loadProject = useEditorStore((state) => state.loadProject);
+    const resetProject = useEditorStore((state) => state.resetProject);
 
     const [isPickerOpen, setIsPickerOpen] = React.useState(false);
     const [isMaterialsOpen, setIsMaterialsOpen] = React.useState(false);
 
     const dmcMatch = React.useMemo(() => findClosestDMC(selectedColor), [selectedColor]);
+
+    const handleNewProject = () => {
+        if (window.confirm('Are you sure you want to start a new project? Any unsaved changes will be lost.')) {
+            resetProject();
+        }
+    };
+
+    const handleExport = () => {
+        const filename = window.prompt('Enter a filename for your project:', 'cross-stitch-project');
+        if (filename === null) return; // User cancelled
+
+        const state = useEditorStore.getState();
+        const data = {
+            pattern: state.pattern,
+            palette: state.palette,
+            projectConfig: state.projectConfig
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target?.result as string);
+                if (data.pattern && data.palette && data.projectConfig) {
+                    loadProject(data);
+                } else {
+                    alert('Invalid project file');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to parse project file');
+            }
+        };
+        reader.readAsText(file);
+        // Reset the input value so the same file can be selected again
+        e.target.value = '';
+    }
 
     if (!projectConfig) {
         return <ProjectSetupModal />;
@@ -35,6 +87,17 @@ function App() {
                 {/* Tools Section Top */}
                 <div className="flex flex-col gap-4 mb-4">
                     <button
+                        onClick={handleNewProject}
+                        className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 flex items-center justify-center transition-all"
+                        title="New Project"
+                    >
+                        {/* Plus Icon */}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+
+                    <button
                         onClick={() => setIsMaterialsOpen(true)}
                         className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 flex items-center justify-center transition-all"
                         title="Project Materials"
@@ -44,6 +107,34 @@ function App() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </button>
+
+                    <button
+                        onClick={handleExport}
+                        className="w-10 h-10 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 flex items-center justify-center transition-all"
+                        title="Save Project"
+                    >
+                        {/* Save Icon */}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                    </button>
+
+                    <label
+                        className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700 flex items-center justify-center transition-all cursor-pointer"
+                        title="Load Project"
+                    >
+                        <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImport}
+                            className="hidden"
+                        />
+                        {/* Load/Upload Icon */}
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                    </label>
+
                     <div className="w-8 h-px bg-gray-200 mx-auto"></div>
                 </div>
 

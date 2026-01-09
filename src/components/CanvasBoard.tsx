@@ -71,7 +71,8 @@ export const CanvasBoard: React.FC = () => {
         if (!pointer) return;
 
         const scaleBy = 1.1;
-        const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        const MIN_SCALE = 0.2;
+        const newScale = Math.max(MIN_SCALE, e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy);
 
         setZoom(newScale);
 
