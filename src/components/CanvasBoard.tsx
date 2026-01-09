@@ -16,6 +16,8 @@ export const CanvasBoard: React.FC = () => {
         selectedColor,
         projectConfig,
         setPixel,
+        removePixel,
+        tool,
         setZoom,
         setPan,
         startStroke,
@@ -24,6 +26,7 @@ export const CanvasBoard: React.FC = () => {
     } = useEditorStore();
 
     const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const [isCtrlPressed, setIsCtrlPressed] = useState(false);
     const isPainting = useRef(false);
 
     useEffect(() => {
@@ -32,18 +35,29 @@ export const CanvasBoard: React.FC = () => {
         };
 
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Control' || e.key === 'Meta') {
+                setIsCtrlPressed(true);
+            }
             if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
                 e.preventDefault();
                 undo();
             }
         };
 
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Control' || e.key === 'Meta') {
+                setIsCtrlPressed(false);
+            }
+        };
+
         window.addEventListener('resize', handleResize);
         window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
 
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
         };
     }, [undo]);
 
@@ -107,7 +121,11 @@ export const CanvasBoard: React.FC = () => {
             const { x, y } = getGridPos(pointer, position.x, position.y, scale);
 
             if (isWithinBounds(x, y)) {
-                setPixel(x, y, selectedColor);
+                if (tool === 'eraser') {
+                    removePixel(x, y);
+                } else {
+                    setPixel(x, y, selectedColor);
+                }
             }
         }
     };
@@ -115,7 +133,7 @@ export const CanvasBoard: React.FC = () => {
     const handleMouseDown = (e: KonvaEventObject<MouseEvent>) => {
         // Middle click (button 1) or spacebar+drag (handled via draggable)
         // If button 0 (left), we paint
-        if (e.evt.button === 0) {
+        if (e.evt.button === 0 && !isCtrlPressed) {
             isPainting.current = true;
             startStroke(); // Start recording history
 
@@ -150,6 +168,7 @@ export const CanvasBoard: React.FC = () => {
             scaleY={scale}
             x={position.x}
             y={position.y}
+            draggable={isCtrlPressed}
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}

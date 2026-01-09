@@ -18,6 +18,7 @@ interface EditorState {
     pattern: Record<string, string> // "x,y" -> hex color
     selectedColor: string
     palette: string[]
+    tool: 'brush' | 'eraser'
     scale: number
     position: Position
 
@@ -34,6 +35,7 @@ interface EditorState {
     setZoom: (scale: number) => void
     setPan: (x: number, y: number) => void
     setColor: (color: string) => void
+    setTool: (tool: 'brush' | 'eraser') => void
     addColor: (color: string) => void
     setProjectConfig: (config: ProjectConfig) => void
 
@@ -57,6 +59,7 @@ export const useEditorStore = create<EditorState>((set) => ({
         '#800080', // Purple
     ],
     selectedColor: '#FF0000',
+    tool: 'brush',
     scale: 1,
     position: { x: 0, y: 0 },
 
@@ -97,6 +100,7 @@ export const useEditorStore = create<EditorState>((set) => ({
     setPan: (x, y) => set({ position: { x, y } }),
 
     setColor: (color) => set({ selectedColor: color }),
+    setTool: (tool) => set({ tool }),
 
     addColor: (color) => set((state) => {
         if (state.palette.includes(color)) {
