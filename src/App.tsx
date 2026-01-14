@@ -19,6 +19,7 @@ function App() {
     const scale = useEditorStore((state) => state.scale);
     const loadProject = useEditorStore((state) => state.loadProject);
     const resetProject = useEditorStore((state) => state.resetProject);
+    const clearPattern = useEditorStore((state) => state.clearPattern);
 
     const [isPickerOpen, setIsPickerOpen] = React.useState(false);
     const [isMaterialsOpen, setIsMaterialsOpen] = React.useState(false);
@@ -136,6 +137,14 @@ function App() {
                     </label>
 
                     <div className="w-8 h-px bg-gray-200 mx-auto"></div>
+
+                    <button
+                        onClick={clearPattern}
+                        className="w-10 h-10 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-all font-bold text-[10px]"
+                        title="Clear Pattern"
+                    >
+                        CLEAR
+                    </button>
                 </div>
 
                 <div className="flex flex-col gap-2 mb-4">

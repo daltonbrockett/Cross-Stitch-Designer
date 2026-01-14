@@ -33,6 +33,7 @@ interface EditorState {
     // Actions
     setPixel: (x: number, y: number, color: string) => void
     removePixel: (x: number, y: number) => void
+    clearPattern: () => void
     setZoom: (scale: number) => void
     setPan: (x: number, y: number) => void
     setColor: (color: string) => void
@@ -83,6 +84,27 @@ export const useEditorStore = create<EditorState>()(
                 return {
                     pattern: { ...state.pattern, [key]: color },
                     currentStroke: [...state.currentStroke, { key, oldColor, newColor: color }]
+                };
+            }),
+
+            clearPattern: () => set((state) => {
+                if (Object.keys(state.pattern).length === 0) return {};
+
+                if (!window.confirm('Are you sure you want to clear the pattern?')) {
+                    return {};
+                }
+
+                const currentStroke = Object.entries(state.pattern).map(([key, oldColor]) => ({
+                    key,
+                    oldColor,
+                    newColor: undefined as any
+                }));
+
+                return {
+                    pattern: {},
+                    undoStack: [...state.undoStack, currentStroke],
+                    redoStack: [],
+                    currentStroke: []
                 };
             }),
 
