@@ -14,7 +14,6 @@ export const GridLayer: React.FC<GridLayerProps> = ({ width, height }) => {
 
     const lines = useMemo(() => {
         // Calculate visible area in grid coordinates
-        // TODO: set limits on zoom out percentage
         const startX = Math.floor((-position.x) / scale / CELL_SIZE) - 1;
         const endX = Math.ceil((-position.x + width) / scale / CELL_SIZE) + 1;
 
@@ -32,7 +31,7 @@ export const GridLayer: React.FC<GridLayerProps> = ({ width, height }) => {
                     points={[i * CELL_SIZE, startY * CELL_SIZE, i * CELL_SIZE, endY * CELL_SIZE]}
                     stroke="#ddd"
                     strokeWidth={isThick ? 2 : 1}
-                    listening={false} // Optimization: ignore events
+                    listening={false}
                 />
             );
         }

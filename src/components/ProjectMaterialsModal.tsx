@@ -26,24 +26,12 @@ export const ProjectMaterialsModal: React.FC<ProjectMaterialsModalProps> = ({ on
         const input: StitchLogicInput = {
             design_shape: projectConfig.isCircular ? 'circle' : 'square',
             dimensions: projectConfig.isCircular
-                ? { radius: projectConfig.radius * projectConfig.aidaCount } // convert inches to stitches? Wait.
-                // Re-reading logic: "dimensions: { radius: int } ... Note: Dimensions are in pixels/stitches."
-                // Store has inches. We need to convert to stitches.
-                : {
-                    width: projectConfig.width * projectConfig.aidaCount,
-                    height: projectConfig.height * projectConfig.aidaCount
-                },
+                ? { radius: projectConfig.radius * projectConfig.aidaCount }
+                : { width: projectConfig.width * projectConfig.aidaCount, height: projectConfig.height * projectConfig.aidaCount },
             fabric_count: projectConfig.aidaCount,
             strand_count: projectConfig.strands,
             palette_counts
         };
-
-        // Correction for radius logic above: 
-        // If isCircular, input needs 'radius' in stitches.
-        if (projectConfig.isCircular) {
-            (input.dimensions as any) = { radius: projectConfig.radius * projectConfig.aidaCount };
-        }
-
         return calculateMaterials(input);
     }, [pattern, projectConfig]);
 
